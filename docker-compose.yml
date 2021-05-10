@@ -1,0 +1,59 @@
+---
+# Borrowed from https://github.com/confluentinc/confluent-kafka-python/blob/master/tests/docker/docker-compose.yaml
+version: "3"
+services:
+  kafka-kaf:
+    image: lowess/kaf
+    networks:
+      - kafka
+    entrypoint: /entrypoint.sh
+    volumes:
+      - ./kaf-entrypoint.sh:/entrypoint.sh
+    command: tail -F /dev/null
+
+  kafka-ngrok:
+    image: wernight/ngrok
+    ports:
+      - 4040:4040
+    environment:
+      NGROK_AUTH: ${NGROK_TOKEN}
+      NGROK_PROTOCOL: TCP
+      NGROK_LOOK_DOMAIN: kafka
+      NGROK_PORT: 29093
+    networks:
+      - kafka
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:5.0.0
+    ports:
+      - 2181:2181
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - kafka
+  kafka:
+    image: confluentinc/cp-kafka
+    depends_on:
+      - zookeeper
+      - kafka-ngrok
+    ports:
+      - 29092:29092
+    volumes:
+      - ./data:/data
+      - ./entrypoint.sh:/entrypoint.sh
+    networks:
+      - kafka
+    environment:
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_DOCKER://0.0.0.0:29092,PLAINTEXT_NGROK://0.0.0.0:29093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_DOCKER://host.docker.internal:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_DOCKER:PLAINTEXT,PLAINTEXT_NGROK:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    entrypoint: "/entrypoint.sh"
+
+networks:
+  kafka:
+    external:
+      name: kafka
+
