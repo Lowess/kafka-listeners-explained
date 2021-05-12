@@ -1,6 +1,7 @@
 .PHONY: up down kaf
 
 up: 
+	docker network create kafka || true
 	docker-compose up -d 
 
 down:

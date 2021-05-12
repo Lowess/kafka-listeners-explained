@@ -38,6 +38,7 @@ services:
       - kafka-ngrok
     ports:
       - 29092:29092
+      - 9092:9092
     volumes:
       - ./data:/data
       - ./entrypoint.sh:/entrypoint.sh
